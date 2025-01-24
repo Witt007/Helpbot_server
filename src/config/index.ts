@@ -3,10 +3,11 @@ dotenv.config();
 
 export const config = {
     mysql: {
-        host: process.env.MYSQL_HOST || '10.1.110.194:3306',
+        host: process.env.MYSQL_HOST || 'localhost',
+        port: parseInt(process.env.MYSQL_PORT || '3306'),
         user: process.env.MYSQL_USER || 'root',
         password: process.env.MYSQL_PASSWORD || 'witt',
-        database: process.env.MYSQL_DATABASE || 'chatbot_db',
+        database: process.env.MYSQL_DATABASE || 'helpbot_db',
     },
     dify: {
         apiKey: process.env.DIFY_API_KEY || 'app-hoBJ5ZkJNuv7L3JwSBWUjqbV',

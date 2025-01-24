@@ -1,5 +1,5 @@
 # Use the official Node.js image from the Docker Hub
-FROM node:12-slim
+FROM node:23-slim
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
@@ -15,6 +15,8 @@ COPY . .
 
 # Expose the port the app runs on
 EXPOSE 3000
+
+RUN npm run build
 
 # Specify the command to run the application using PM2
 CMD ["npm", "start"]
