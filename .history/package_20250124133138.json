@@ -6,7 +6,7 @@
   "scripts": {
     "start": "pm2 start dist/app.js --name helpbot_server --env production",
     "build": "tsc",
-    "dev": "nodemon --exec ts-node src/app.ts --watch"
+    "dev": "nodemon --exec ts-node src/app.ts --watch",
   },
   "dependencies": {
     "express": "^4.17.1",
