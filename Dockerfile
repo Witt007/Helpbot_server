@@ -8,7 +8,8 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install the dependencies
-RUN npm install --only=production
+RUN npm install && npm run build
+#--only=production
 
 # Copy the rest of the application code to the working directory
 COPY . .
@@ -16,7 +17,6 @@ COPY . .
 # Expose the port the app runs on
 EXPOSE 3000
 
-RUN npm run build
 
 # Specify the command to run the application using PM2
 CMD ["npm", "start"]
