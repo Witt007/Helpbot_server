@@ -13,11 +13,8 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY . .
 
-# Build the TypeScript code
-RUN npm run build
-
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Specify the command to run the application using PM2
-CMD ["pm2-runtime", "start", "dist/app.js", "--name", "helpbot_server"]
+# Specify the command to run the application
+CMD ["node", "app.js"]
