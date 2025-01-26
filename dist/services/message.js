@@ -8,30 +8,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateMessageStatus = exports.sendMessageToAI = void 0;
 const dify_1 = require("./dify");
-const mysql_1 = require("../database/mysql");
+const db_1 = __importDefault(require("../database/db"));
 const sendMessageToAI = (userId, conversationId, messageContent) => __awaiter(void 0, void 0, void 0, function* () {
-    // 1. 保存用户消息到数据库 (可选)
-    const messageId = yield saveMessageToDatabase(userId, conversationId, messageContent, 'user');
+    // 1. 保存用户消息到数据库
+    const messageId = yield saveMessageToDatabase(conversationId, messageContent, 'user', 'sending');
     // 2. 调用 Dify API 获取流式响应
     const stream = yield (0, dify_1.streamDifyChat)({ user_id: userId }, messageContent, conversationId, userId);
+    yield saveMessageToDatabase(conversationId, messageContent, 'assistant', 'sending');
+    // 3. 更新消息状态为 'sent'
+    yield (0, exports.updateMessageStatus)(messageId, 'sent');
     return { messageId, stream };
 });
 exports.sendMessageToAI = sendMessageToAI;
 const updateMessageStatus = (messageId, status) => __awaiter(void 0, void 0, void 0, function* () {
-    // 更新消息状态，例如 'sending', 'sent', 'failed' 等
-    yield (0, mysql_1.query)('UPDATE messages SET status = ? WHERE id = ?', [status, messageId]);
+    yield db_1.default.query('UPDATE messages SET status = ? WHERE id = ?', [status, messageId]);
 });
 exports.updateMessageStatus = updateMessageStatus;
-const saveMessageToDatabase = (userId, conversationId, content, senderType) => __awaiter(void 0, void 0, void 0, function* () {
-    const messageId = generateUniqueId(); //  需要实现 generateUniqueId 函数
-    yield (0, mysql_1.query)('INSERT INTO messages (id, conversation_id, sender_id, sender_type, content, timestamp) VALUES (?, ?, ?, ?, ?, NOW())', [messageId, conversationId, userId, senderType, content]);
-    return messageId;
+const saveMessageToDatabase = (conversationId, content, role, status) => __awaiter(void 0, void 0, void 0, function* () {
+    const [result] = yield db_1.default.query('INSERT INTO messages (conversation_id, role, status, content) VALUES ( ?, ?, ?, ?)', [conversationId, role, status, content]);
+    return result.insertId;
 });
-//  简易的 UUID 生成函数，实际应用中可以使用更完善的 UUID 库
-const generateUniqueId = () => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-};
 // ... 其他消息相关的服务逻辑，例如获取消息历史，语音转文字等 

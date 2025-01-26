@@ -1,5 +1,6 @@
-import { Express, Request, Response } from 'express';
+import { Express, Request, Response, Router } from 'express';
 import * as userService from '../services/user';
+
 
 export const setupUserController = (app: Express) => {
     // 创建用户

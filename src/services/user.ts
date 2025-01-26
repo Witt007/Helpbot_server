@@ -1,4 +1,4 @@
-import { query } from '../database/mysql';
+import db from '../database/db';
 
 interface User  {
     id: string;
@@ -9,25 +9,25 @@ interface User  {
 
 export const createUser = async (username: string, email: string) => {
     const userId = generateUniqueId(); //  需要实现 generateUniqueId 函数
-    await query('INSERT INTO users (id, username, email, created_at) VALUES (?, ?, ?, NOW())', [userId, username, email]);
+    await db.query('INSERT INTO users (id, username, email, created_at) VALUES (?, ?, ?, NOW())', [userId, username, email]);
     return userId;
 };
 
 export const getUserById = async (userId: string): Promise<User | undefined> => {
-    const users = await query('SELECT * FROM users WHERE id = ?', [userId]) as User[];
+    const users = await db.query('SELECT * FROM users WHERE id = ?', [userId]) as User[];
     return users[0];
 };
 
 export const updateUser = async (userId: string, username: string, email: string) => {
-    await query('UPDATE users SET username = ?, email = ? WHERE id = ?', [username, email, userId]);
+    await db.query('UPDATE users SET username = ?, email = ? WHERE id = ?', [username, email, userId]);
 };
 
 export const deleteUser = async (userId: string) => {
-    await query('DELETE FROM users WHERE id = ?', [userId]);
+    await db.query('DELETE FROM users WHERE id = ?', [userId]);
 };
 
 export const getAllUsers = async () => {
-    return await query('SELECT * FROM users');
+    return await db.query('SELECT * FROM users');
 };
 
 //  简易的 UUID 生成函数，实际应用中可以使用更完善的 UUID 库 (如果 message.ts 中没有定义，这里也需要)

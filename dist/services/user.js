@@ -8,30 +8,33 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllUsers = exports.deleteUser = exports.updateUser = exports.getUserById = exports.createUser = void 0;
-const mysql_1 = require("../database/mysql");
+const db_1 = __importDefault(require("../database/db"));
 const createUser = (username, email) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = generateUniqueId(); //  需要实现 generateUniqueId 函数
-    yield (0, mysql_1.query)('INSERT INTO users (id, username, email, created_at) VALUES (?, ?, ?, NOW())', [userId, username, email]);
+    yield db_1.default.query('INSERT INTO users (id, username, email, created_at) VALUES (?, ?, ?, NOW())', [userId, username, email]);
     return userId;
 });
 exports.createUser = createUser;
 const getUserById = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const users = yield (0, mysql_1.query)('SELECT * FROM users WHERE id = ?', [userId]);
+    const users = yield db_1.default.query('SELECT * FROM users WHERE id = ?', [userId]);
     return users[0];
 });
 exports.getUserById = getUserById;
 const updateUser = (userId, username, email) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, mysql_1.query)('UPDATE users SET username = ?, email = ? WHERE id = ?', [username, email, userId]);
+    yield db_1.default.query('UPDATE users SET username = ?, email = ? WHERE id = ?', [username, email, userId]);
 });
 exports.updateUser = updateUser;
 const deleteUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, mysql_1.query)('DELETE FROM users WHERE id = ?', [userId]);
+    yield db_1.default.query('DELETE FROM users WHERE id = ?', [userId]);
 });
 exports.deleteUser = deleteUser;
 const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
-    return yield (0, mysql_1.query)('SELECT * FROM users');
+    return yield db_1.default.query('SELECT * FROM users');
 });
 exports.getAllUsers = getAllUsers;
 //  简易的 UUID 生成函数，实际应用中可以使用更完善的 UUID 库 (如果 message.ts 中没有定义，这里也需要)
