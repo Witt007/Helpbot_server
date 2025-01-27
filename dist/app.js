@@ -17,8 +17,10 @@ const express_1 = __importDefault(require("express"));
 const http_1 = __importDefault(require("http"));
 const server_1 = require("./websocket/server");
 const user_1 = require("./controllers/user");
+const message_1 = require("./controllers/message");
 const db_1 = require("./database/db");
 const WebSocketService_1 = require("./services/WebSocketService");
+const cors_1 = __importDefault(require("cors"));
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 // 使用单例获取 WebSocket 服务实例
@@ -31,9 +33,14 @@ function initialize() {
             yield (0, db_1.initDatabase)();
             // 配置 Express 中间件 (例如 JSON 解析)
             app.use(express_1.default.json());
+            app.use((0, cors_1.default)());
+            app.use((req, res, next) => {
+                console.log(`${req.method} ${req.url}`);
+                next();
+            });
             // 设置 HTTP 路由
             (0, user_1.setupUserController)(app);
-            // setupMessageController(app);
+            (0, message_1.setupMessageController)(app);
             // 设置 WebSocket 服务器
             (0, server_1.setupWebSocketServer)(server, wsService);
             const PORT = process.env.PORT || 3000;

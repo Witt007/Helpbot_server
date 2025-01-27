@@ -17,7 +17,7 @@ const setupMessageController = (app) => {
     app.post('/api/messages', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const { conversationId, content } = req.body;
-            const openId = req.headers['X-WX-OPENID'];
+            const openId = req.headers['x-wx-openid'];
             const message = yield chatService.sendMessage({
                 conversationId,
                 content,
@@ -46,10 +46,23 @@ const setupMessageController = (app) => {
     // 获取用户消息历史
     app.get('/api/messages', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const openId = req.headers['X-WX-OPENID'];
+            const openId = req.headers['x-wx-openid'];
             const offset = parseInt(req.query.offset) || 0;
             const limit = parseInt(req.query.limit) || 10;
+            // Validate openId
+            if (!openId) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Missing openId in headers'
+                });
+            }
             const messages = yield chatService.getUserMessages(openId, offset, limit);
+            if (!messages) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'No messages found'
+                });
+            }
             res.json({ success: true, messages });
         }
         catch (error) {
@@ -60,7 +73,7 @@ const setupMessageController = (app) => {
     // 创建新的引导式话题
     app.post('/api/topics/generate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const openId = req.headers['X-WX-OPENID'];
+            const openId = req.headers['x-wx-openid'];
             const topic = req.body.topic;
             // 调用 chatService 生成新话题
             const conversationId = yield chatService.generateNewTopic(openId, topic);
@@ -75,7 +88,7 @@ const setupMessageController = (app) => {
     app.put('/api/messages/:messageId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const messageId = req.params.messageId;
-            const openId = req.headers['X-WX-OPENID'];
+            const openId = req.headers['x-wx-openid'];
             const { content } = req.body;
             const updatedMessage = yield chatService.updateMessage(Number(messageId), content);
             res.json({ success: true, message: updatedMessage });
@@ -88,7 +101,7 @@ const setupMessageController = (app) => {
     // 获取下一步建议问题
     app.get('/api/getquestions', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const openId = req.headers['X-WX-OPENID'];
+            const openId = req.headers['x-wx-openid'];
             const suggestions = yield chatService.getNextSuggestions(openId);
             res.json({ success: true, suggestions });
         }
