@@ -3,8 +3,8 @@ dotenv.config();
 
 export const config = {
     db: {
-        host: process.env.MYSQL_HOST|| "10.1.110.194"|| 'sh-cynosdbmysql-grp-mu25vuwk.sql.tencentcdb.com',
-        port: parseInt(process.env.MYSQL_PORT ||"3306"|| '25263'),
+        host: process.env.MYSQL_HOST|| || 'sh-cynosdbmysql-grp-mu25vuwk.sql.tencentcdb.com',
+        port: parseInt(process.env.MYSQL_PORT || '25263'),
         user: process.env.MYSQL_USER || 'witt',
         password: process.env.MYSQL_PASSWORD || 'Robertwitt2019',
         database: process.env.MYSQL_DATABASE || 'helpbot_db',

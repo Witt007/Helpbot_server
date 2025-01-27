@@ -5,7 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "start": "pm2-runtime start dist/app.js --name helpbot_server --env production",
-    "build": "tsc && git add . ",
+    "deploy": "tsc && git add . ",
     "dev": "nodemon --exec ts-node src/app.ts --watch --force"
   },
   "dependencies": {
