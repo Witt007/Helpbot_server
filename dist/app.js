@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.wsService = void 0;
 const express_1 = __importDefault(require("express"));
 const http_1 = __importDefault(require("http"));
+const body_parser_1 = __importDefault(require("body-parser"));
 const server_1 = require("./websocket/server");
 const user_1 = require("./controllers/user");
 const message_1 = require("./controllers/message");
@@ -38,6 +39,10 @@ function initialize() {
                 console.log(`${req.method} ${req.url}`);
                 next();
             });
+            // Parse JSON bodies
+            app.use(body_parser_1.default.json());
+            // Parse URL-encoded bodies
+            app.use(body_parser_1.default.urlencoded({ extended: true }));
             // 设置 HTTP 路由
             (0, user_1.setupUserController)(app);
             (0, message_1.setupMessageController)(app);

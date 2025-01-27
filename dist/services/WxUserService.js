@@ -15,21 +15,26 @@ class WxUserService {
     constructor() {
         this.userModel = new WxUserModel_1.WxUserModel();
     }
-    loginUser(wxLoginData) {
+    loginUser(openId, avatarUrl) {
         return __awaiter(this, void 0, void 0, function* () {
-            let user = yield this.userModel.findByOpenId(wxLoginData.openId);
+            let user = yield this.userModel.findByOpenId(openId);
             if (!user) {
                 user = yield this.userModel.create({
-                    openId: wxLoginData.openId,
-                    unionId: wxLoginData.unionId,
-                    sessionKey: wxLoginData.sessionKey
+                    openId: openId, avatarUrl
                 });
             }
             else {
-                yield this.userModel.updateLastLogin(wxLoginData.openId);
+                // await this.userModel.updateLastLogin(wxLoginData.openId);
             }
-            return user;
+            return true;
         });
+    }
+    static getInstance() {
+        if (!this.ins) {
+            this.ins = new WxUserService();
+        }
+        return this.ins;
     }
 }
 exports.WxUserService = WxUserService;
+WxUserService.ins = null;

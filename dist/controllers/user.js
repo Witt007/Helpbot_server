@@ -33,13 +33,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupUserController = void 0;
+const WxUserService_1 = require("../services/WxUserService");
 const userService = __importStar(require("../services/user"));
 const setupUserController = (app) => {
     // 创建用户
     app.post('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const { username, email } = req.body;
-            const userId = yield userService.createUser(username, email);
+            const { avatarUrl } = req.body;
+            const openId = req.headers['x-wx-openid'];
+            const userId = yield WxUserService_1.WxUserService.getInstance().loginUser(openId, avatarUrl);
             res.status(201).json({ userId, message: 'User created successfully' });
         }
         catch (error) {

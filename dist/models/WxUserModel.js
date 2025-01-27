@@ -17,7 +17,7 @@ const db_1 = __importDefault(require("../database/db"));
 class WxUserModel {
     create(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            const [result] = yield db_1.default.query('INSERT INTO wx_users (open_id, union_id, session_key, nick_name, avatar_url) VALUES (?, ?, ?, ?, ?)', [user.openId, user.unionId, user.sessionKey, user.nickName, user.avatarUrl]);
+            const [result] = yield db_1.default.query('INSERT INTO wx_users (open_id, avatar_url) VALUES (?, ?)', [user.openId, user.avatarUrl]);
             const created = yield this.findByOpenId(user.openId);
             if (!created)
                 throw new Error('Failed to create user');

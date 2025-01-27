@@ -24,7 +24,7 @@ exports.validators = {
         avatarUrl: joi_1.default.string().uri().allow(null)
     }),
     message: joi_1.default.object({
-        conversationId: joi_1.default.number().required(),
+        conversationId: joi_1.default.string().required(),
         content: joi_1.default.string().required(),
         role: joi_1.default.string().valid('user', 'assistant').required()
     }),

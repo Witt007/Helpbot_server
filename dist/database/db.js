@@ -46,8 +46,15 @@ class Database {
     }
     query(sql, values) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield this.pool.execute(sql, values);
-            return result;
+            try {
+                yield this.useDB();
+                const result = yield this.pool.execute(sql, values);
+                return result;
+            }
+            catch (error) {
+                console.error('SQL Error:', error);
+            }
+            return [[], null];
         });
     }
     transaction(callback) {
@@ -68,6 +75,11 @@ class Database {
             }
         });
     }
+    useDB() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.pool.query(`USE ${config_1.config.db.database}`);
+        });
+    }
     // 初始化数据库
     initDatabase() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -75,7 +87,7 @@ class Database {
                 // 创建数据库（如果不存在）
                 yield this.createDatabaseIfNotExists();
                 // 连接到指定的数据库
-                yield this.pool.query(`USE ${config_1.config.db.database}`);
+                yield this.useDB();
                 // 读取并执行初始化SQL文件
                 yield this.executeMigrations();
                 console.log('数据库初始化完成');

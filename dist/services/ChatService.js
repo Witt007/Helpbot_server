@@ -18,7 +18,6 @@ const MessageModel_1 = require("../models/MessageModel");
 const db_1 = __importDefault(require("../database/db"));
 const logger_1 = require("../utils/logger");
 const cache_1 = require("../utils/cache");
-const validator_1 = require("../utils/validator");
 const errors_1 = require("../types/errors");
 const DifyService_1 = require("./DifyService");
 const WebSocketService_1 = require("./WebSocketService");
@@ -78,10 +77,15 @@ class ChatService {
     sendMessage(data) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield (0, validator_1.validate)(validator_1.validators.message, data);
+                //await validate(validators.message, data);
                 return yield db_1.default.transaction((connection) => __awaiter(this, void 0, void 0, function* () {
                     // 保存用户消息
-                    const userMessage = yield this.messageModel.create(Object.assign(Object.assign({}, data), { status: 'sent' }));
+                    const userMessage = yield this.messageModel.create({
+                        conversationId: data.conversationId,
+                        content: data.content,
+                        role: data.role,
+                        status: 'sent'
+                    });
                     // 创建 AI 回复消息记录
                     const aiMessage = yield this.messageModel.create({
                         conversationId: data.conversationId,
