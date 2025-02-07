@@ -314,6 +314,7 @@ export class ChatService {
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,
                             data: {
+                                conversationId,
                                 content: parsedData.answer,
                                 isComplete: false
                             }
@@ -337,6 +338,8 @@ export class ChatService {
                         }
                         await this.messageModel.create(ms);
 
+                        conversationId='';
+                        fullContent='';
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,
                             data: {
