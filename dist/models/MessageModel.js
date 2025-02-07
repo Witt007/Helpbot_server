@@ -48,7 +48,7 @@ class MessageModel {
             FROM messages m
             JOIN chat_sessions cs ON m.conversation_id = cs.id
             WHERE cs.open_id = ?
-            ORDER BY m.created_at DESC
+            ORDER BY m.id DESC
             LIMIT ? OFFSET ?
         `;
             const [messages] = yield db_1.default.query(query, [openId, limit, offset]);
