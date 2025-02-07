@@ -12,8 +12,10 @@ export function setupWebSocketServer(server: Server, wsService: WebSocketService
             // 从 URL 查询参数中获取 token
             const url = new URL(req.url || '', 'ws://localhost');
             const token = url.searchParams.get('token');
+            const openId = req.headers['x-wx-openid'] as string;
+            console.log('ws connection: openId', openId);
             
-            if (!token) {
+          /*   if (!token) {
                 ws.close(1008, '缺少认证信息');
                 return;
             }
@@ -23,22 +25,22 @@ export function setupWebSocketServer(server: Server, wsService: WebSocketService
             if (!user) {
                 ws.close(1008, '认证失败');
                 return;
-            }
+            } */
 
             // 将 WebSocket 连接与用户 openId 关联
-            wsService.addClient(user.openId, ws);
-            logger.info('WebSocket 客户端已连接', { openId: user.openId });
+            wsService.addClient(openId, ws);
+            logger.info('WebSocket 客户端已连接', { openId });
 
             // 处理连接关闭
             ws.on('close', () => {
-                wsService.removeClient(user.openId);
-                logger.info('WebSocket 客户端已断开', { openId: user.openId });
+                wsService.removeClient(openId);
+                logger.info('WebSocket 客户端已断开', { openId });
             });
 
             // 处理连接错误
             ws.on('error', (error) => {
-                logger.error('WebSocket 连接错误', { error, openId: user.openId });
-                wsService.removeClient(user.openId);
+                logger.error('WebSocket 连接错误', { error, openId });
+                wsService.removeClient(openId);
             });
 
         } catch (error) {
