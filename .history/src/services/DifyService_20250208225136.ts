@@ -39,7 +39,7 @@ export class DifyService {
                 `${this.baseUrl}/chat-messages`,
                 {
                     inputs:{},
-                    query: params.query,
+                    query: fullQuery,
                     response_mode: 'streaming',
                     conversation_id: params.conversationId,
                     user: params.openId,
