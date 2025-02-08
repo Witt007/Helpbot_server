@@ -2,6 +2,7 @@ import WebSocket from 'ws';
 import { Server } from 'http';
 import { WebSocketService } from '../services/WebSocketService';
 import { logger } from '../utils/logger';
+import { verifyToken } from '../utils/auth';
 
 export function setupWebSocketServer(server: Server, wsService: WebSocketService) {
     const wss = new WebSocket.Server({ server });

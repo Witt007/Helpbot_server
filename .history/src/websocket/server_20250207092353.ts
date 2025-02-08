@@ -2,6 +2,7 @@ import WebSocket from 'ws';
 import { Server } from 'http';
 import { WebSocketService } from '../services/WebSocketService';
 import { logger } from '../utils/logger';
+import { verifyToken } from '../utils/auth';
 
 export function setupWebSocketServer(server: Server, wsService: WebSocketService) {
     const wss = new WebSocket.Server({ server });
@@ -12,6 +13,7 @@ export function setupWebSocketServer(server: Server, wsService: WebSocketService
             const url = new URL(req.url || '', 'ws://localhost');
             const token = url.searchParams.get('token');
             const openId = req.headers['x-wx-openid'] as string;
+            console.log('ws connection: openId', openId);
             
           /*   if (!token) {
                 ws.close(1008, '缺少认证信息');

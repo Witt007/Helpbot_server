@@ -24,8 +24,8 @@ export class DifyService {
     }): Promise<Readable> {
         try {
             // 构建上下文消息
-            const el=params.history[Math.max(0,params.history.length-1)]
-            params.history=el?[el]:[];
+            const item=params.history[Math.max(0,params.history.length-1)]
+            params.history=[];
             const contextMessage = params.history
                 .map(msg => `${msg.role === 'user' ? '用户' : 'AI助手'}: ${msg.content}`)
                 .join('\n');

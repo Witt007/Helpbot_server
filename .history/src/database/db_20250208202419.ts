@@ -126,7 +126,7 @@ const db = Database.getInstance();
 
 // 导出初始化函数
 export const initDatabase = async () => {
-    //await db.dropDatabase();
+    await db.dropDatabase();
     await db.initDatabase();
 };
 

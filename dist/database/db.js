@@ -137,7 +137,7 @@ class Database {
 const db = Database.getInstance();
 // 导出初始化函数
 const initDatabase = () => __awaiter(void 0, void 0, void 0, function* () {
-    // await db.dropDatabase();
+    //await db.dropDatabase();
     yield db.initDatabase();
 });
 exports.initDatabase = initDatabase;

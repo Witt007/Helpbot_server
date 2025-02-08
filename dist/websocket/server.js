@@ -23,7 +23,6 @@ function setupWebSocketServer(server, wsService) {
             const url = new URL(req.url || '', 'ws://localhost');
             const token = url.searchParams.get('token');
             const openId = req.headers['x-wx-openid'];
-            console.log('ws connection: openId', openId);
             /*   if (!token) {
                   ws.close(1008, '缺少认证信息');
                   return;
