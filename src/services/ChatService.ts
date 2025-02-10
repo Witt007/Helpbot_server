@@ -1,15 +1,14 @@
-import { ChatSessionModel } from '../models/ChatSessionModel';
-import { MessageModel } from '../models/MessageModel';
-import { ChatSession } from '../entities/ChatSession';
-import { Message } from '../entities/Message';
+import {ChatSessionModel} from '../models/ChatSessionModel';
+import {MessageModel} from '../models/MessageModel';
+import {ChatSession} from '../entities/ChatSession';
+import {Message} from '../entities/Message';
 import db from '../database/db';
-import { logger } from '../utils/logger';
-import { Cache } from '../utils/cache';
-import { validate, validators } from '../utils/validator';
-import { AppError, DatabaseError } from '../types/errors';
-import { DifyService } from './DifyService';
-import { WebSocketService } from './WebSocketService';
-import { Readable } from 'stream';
+import {logger} from '../utils/logger';
+import {Cache} from '../utils/cache';
+import {AppError, DatabaseError} from '../types/errors';
+import {DifyService} from './DifyService';
+import {WebSocketService} from './WebSocketService';
+import {Readable} from 'stream';
 
 enum wsMessageType {
     answer = 'answer',
@@ -33,7 +32,7 @@ export class ChatService {
 
     async createSession(id: string, openId: string, title?: string): Promise<ChatSession> {
         try {
-            const session = await db.transaction(async (connection) => {
+            const session = await db.transaction(async () => {
                 const newSession = await this.sessionModel.create({ openId, title, id });
                 logger.info('新会话创建成功', { sessionId: newSession.id, openId });
                 return newSession;
@@ -79,7 +78,7 @@ export class ChatService {
         try {
             //await validate(validators.message, data);
 
-            return await db.transaction(async (connection) => {
+            return await db.transaction(async () => {
 
                 
 
@@ -338,7 +337,7 @@ export class ChatService {
                         }
                         await this.messageModel.create(ms);
 
-                        conversationId='';
+                        conversationId = '';// need to be deleted
                         fullContent='';
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,

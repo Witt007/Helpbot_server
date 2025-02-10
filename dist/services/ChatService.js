@@ -303,7 +303,7 @@ class ChatService {
                             status: 'sent'
                         };
                         yield this.messageModel.create(ms);
-                        conversationId = '';
+                        conversationId = ''; // need to be deleted
                         fullContent = '';
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,
