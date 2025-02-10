@@ -382,6 +382,13 @@ export class ChatService {
             (parsedData) => {
 
                 nextSuggestions += parsedData.answer;
+                this.wsService.sendMessage(openId, {
+                    type: wsMessageType.suggestions,
+                    data: {
+                        content: nextSuggestions,
+                        isComplete: false
+                    }
+                });
             },
             async () => {
                 this.wsService.sendMessage(openId, {
