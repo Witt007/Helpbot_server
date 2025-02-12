@@ -21,6 +21,7 @@ const cache_1 = require("../utils/cache");
 const errors_1 = require("../types/errors");
 const DifyService_1 = require("./DifyService");
 const WebSocketService_1 = require("./WebSocketService");
+const uuid_1 = require("uuid");
 var wsMessageType;
 (function (wsMessageType) {
     wsMessageType["answer"] = "answer";
@@ -39,11 +40,8 @@ class ChatService {
     createSession(id, openId, title) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const session = yield db_1.default.transaction((connection) => __awaiter(this, void 0, void 0, function* () {
-                    const newSession = yield this.sessionModel.create({ openId, title, id });
-                    logger_1.logger.info('新会话创建成功', { sessionId: newSession.id, openId });
-                    return newSession;
-                }));
+                const session = yield this.sessionModel.create({ openId, title, id });
+                logger_1.logger.info('新会话创建成功', { sessionId: session.id, openId });
                 // 清除用户会话列表缓存
                 yield this.cache.del(`user_sessions:${openId}`);
                 return session;
@@ -78,9 +76,11 @@ class ChatService {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 //await validate(validators.message, data);
-                return yield db_1.default.transaction((connection) => __awaiter(this, void 0, void 0, function* () {
+                return yield db_1.default.transaction(() => __awaiter(this, void 0, void 0, function* () {
+                    let fullContent = '', peerId = (0, uuid_1.v4)(), id = (0, uuid_1.v4)();
                     // 保存用户消息
                     const userMessage = yield this.messageModel.create({
+                        id: peerId,
                         conversationId: data.conversationId,
                         content: data.content,
                         role: data.role,
@@ -91,7 +91,8 @@ class ChatService {
                         conversationId: data.conversationId,
                         content: '',
                         role: 'assistant',
-                        status: 'sending'
+                        status: 'sending',
+                        id
                     });
                     // 获取会话历史消息
                     const history = yield this.getSessionMessages(data.conversationId);
@@ -105,15 +106,13 @@ class ChatService {
                         openId: data.openId,
                         conversationId: data.conversationId
                     });
-                    let fullContent = '';
                     this.handleDifyStream(stream, (parsedData) => {
                         fullContent += parsedData.answer;
                         // WebSocket 发送失败时，将消息状态标记为需要轮询
                         if (!this.wsService.sendMessage(data.openId, {
                             type: wsMessageType.answer,
                             data: {
-                                messageId: aiMessage.id,
-                                content: parsedData.answer,
+                                rawData: Object.assign(Object.assign({}, parsedData), { content: parsedData.answer, id, peerId, role: "assistant" }),
                                 isComplete: false
                             }
                         })) {
@@ -124,13 +123,14 @@ class ChatService {
                         }
                     }, () => __awaiter(this, void 0, void 0, function* () {
                         // 更新 AI 消息内容和状态
-                        yield this.messageModel.updateContent(aiMessage.id, fullContent);
+                        yield this.messageModel.updateContent(id, fullContent);
+                        yield this.messageModel.updateStatus(id, 'sent');
                         // 发送完成信号
                         if (this.wsService.isConnected(data.openId)) {
                             this.wsService.sendMessage(data.openId, {
                                 type: wsMessageType.answer,
                                 data: {
-                                    rawData: Object.assign(Object.assign({}, aiMessage), { content: fullContent }),
+                                    rawData: Object.assign(Object.assign({}, aiMessage), { content: fullContent, id, peerId }),
                                     isComplete: true
                                 }
                             });
@@ -138,7 +138,7 @@ class ChatService {
                         yield this.cache.del(`conversation_messages:${data.conversationId}`);
                     }), (error) => __awaiter(this, void 0, void 0, function* () {
                         logger_1.logger.error('Dify 响应错误', { error, messageId: aiMessage.id });
-                        yield this.messageModel.updateStatus(aiMessage.id, 'failed');
+                        yield this.messageModel.updateStatus(id, 'failed');
                         if (this.wsService.isConnected(data.openId)) {
                             this.wsService.sendMessage(data.openId, {
                                 type: wsMessageType.error,
@@ -164,6 +164,13 @@ class ChatService {
     updateMessage(messageId, content) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.messageModel.updateContent(messageId, content);
+        });
+    }
+    deleteMessage(ids) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield db_1.default.transaction(() => __awaiter(this, void 0, void 0, function* () {
+                return yield this.messageModel.deleteLatestMessagesByIds(ids);
+            }));
         });
     }
     handleDifyStream(stream, onMessage, onEnd, onError) {
@@ -278,16 +285,16 @@ class ChatService {
                     history: [],
                     openId: openId
                 });
-                let fullContent = '', conversationId = '';
+                let fullContent = '', conversationId = '', id = (0, uuid_1.v4)();
                 return yield db_1.default.transaction(() => __awaiter(this, void 0, void 0, function* () {
                     yield this.handleDifyStream(difyResponse, (parsedData) => {
                         fullContent += parsedData.answer;
                         conversationId || (conversationId = parsedData.conversation_id);
+                        id || (id = parsedData.message_id);
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,
                             data: {
-                                conversationId,
-                                content: parsedData.answer,
+                                rawData: Object.assign(Object.assign({}, parsedData), { conversationId, content: parsedData.answer, id }),
                                 isComplete: false
                             }
                         });
@@ -297,6 +304,7 @@ class ChatService {
                         const conversation = yield this.createSession(conversationId, openId, '新话题对话');
                         // 创建 AI 消息记录
                         const ms = {
+                            id,
                             conversationId: conversation.id,
                             content: fullContent,
                             role: 'assistant',
@@ -305,6 +313,7 @@ class ChatService {
                         yield this.messageModel.create(ms);
                         conversationId = ''; // need to be deleted
                         fullContent = '';
+                        id = '';
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,
                             data: {
@@ -314,6 +323,7 @@ class ChatService {
                         });
                     }), (error) => __awaiter(this, void 0, void 0, function* () {
                         console.error('Dify 响应错误', { error });
+                        this.messageModel.updateStatus(id, 'failed');
                     }));
                     return conversationId;
                 }));
@@ -326,22 +336,29 @@ class ChatService {
     }
     getNextSuggestions(openId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const messages = yield this.getUserMessages(openId);
-            const lastMessage = messages[messages.length - 1];
+            /*const messages = await this.getUserMessages(openId);
+            const lastMessage = messages[messages.length - 1];*/
             const difyResponse = yield this.difyService.streamChat({
                 conversationId: '',
-                query: '根据知识库和上下文，你作为公司的专业营销人员，从产品和公司方面，生成提示词集合，结果用&分隔。\n' + lastMessage.content,
+                query: '根据知识库和上下文，你作为公司的专业营销人员，从产品和公司方面，生成提示词集合，结果用&分隔。',
                 history: [],
                 openId: openId
             });
             let nextSuggestions = '';
             this.handleDifyStream(difyResponse, (parsedData) => {
                 nextSuggestions += parsedData.answer;
+                this.wsService.sendMessage(openId, {
+                    type: wsMessageType.suggestions,
+                    data: {
+                        rawData: Object.assign(Object.assign({}, parsedData), { content: parsedData.answer, id: parsedData.message_id }),
+                        isComplete: false
+                    }
+                });
             }, () => __awaiter(this, void 0, void 0, function* () {
                 this.wsService.sendMessage(openId, {
                     type: wsMessageType.suggestions,
                     data: {
-                        content: nextSuggestions,
+                        rawData: { content: nextSuggestions },
                         isComplete: true
                     }
                 });

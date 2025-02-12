@@ -9,6 +9,7 @@ import {AppError, DatabaseError} from '../types/errors';
 import {DifyService} from './DifyService';
 import {WebSocketService} from './WebSocketService';
 import {Readable} from 'stream';
+import {v4 as uuidv4} from 'uuid';
 
 enum wsMessageType {
     answer = 'answer',
@@ -32,11 +33,9 @@ export class ChatService {
 
     async createSession(id: string, openId: string, title?: string): Promise<ChatSession> {
         try {
-            const session = await db.transaction(async () => {
-                const newSession = await this.sessionModel.create({ openId, title, id });
-                logger.info('新会话创建成功', { sessionId: newSession.id, openId });
-                return newSession;
-            });
+            const session = await this.sessionModel.create({openId, title, id});
+            logger.info('新会话创建成功', {sessionId: session.id, openId});
+
 
             // 清除用户会话列表缓存
             await this.cache.del(`user_sessions:${openId}`);
@@ -80,10 +79,11 @@ export class ChatService {
 
             return await db.transaction(async () => {
 
-                
+                let fullContent = '', peerId = uuidv4(), id = uuidv4();
 
                 // 保存用户消息
                 const userMessage = await this.messageModel.create({
+                    id: peerId,
                     conversationId: data.conversationId,
                     content: data.content,
                     role: data.role,
@@ -95,7 +95,8 @@ export class ChatService {
                     conversationId: data.conversationId,
                     content: '',
                     role: 'assistant',
-                    status: 'sending'
+                    status: 'sending',
+                    id
                 });
 
                 // 获取会话历史消息
@@ -111,7 +112,6 @@ export class ChatService {
                     openId: data.openId,
                     conversationId: data.conversationId
                 });
-                let fullContent = '';
                 this.handleDifyStream(stream,
                     (parsedData) => {
                         fullContent += parsedData.answer;
@@ -119,8 +119,7 @@ export class ChatService {
                         if (!this.wsService.sendMessage(data.openId, {
                             type: wsMessageType.answer,
                             data: {
-                                messageId: aiMessage.id,
-                                content: parsedData.answer,
+                                rawData: {...parsedData, content: parsedData.answer, id, peerId, role: "assistant"},
                                 isComplete: false
                             }
                         })) {
@@ -132,14 +131,15 @@ export class ChatService {
                     },
                     async () => {
                         // 更新 AI 消息内容和状态
-                        await this.messageModel.updateContent(aiMessage.id, fullContent);
+                        await this.messageModel.updateContent(id, fullContent);
+                        await this.messageModel.updateStatus(id, 'sent');
 
                         // 发送完成信号
                         if (this.wsService.isConnected(data.openId)) {
                             this.wsService.sendMessage(data.openId, {
                                 type: wsMessageType.answer,
                                 data: {
-                                    rawData: { ...aiMessage, content: fullContent },
+                                    rawData: {...aiMessage, content: fullContent, id, peerId},
                                     isComplete: true
                                 }
                             });
@@ -149,7 +149,7 @@ export class ChatService {
                     },
                     async (error: Error) => {
                         logger.error('Dify 响应错误', { error, messageId: aiMessage.id });
-                        await this.messageModel.updateStatus(aiMessage.id, 'failed');
+                        await this.messageModel.updateStatus(id, 'failed');
 
                         if (this.wsService.isConnected(data.openId)) {
                             this.wsService.sendMessage(data.openId, {
@@ -175,15 +175,23 @@ export class ChatService {
         }
     }
 
-    async updateMessage(messageId: number, content: string) {
+    async updateMessage(messageId: string, content: string) {
         await this.messageModel.updateContent(messageId, content);
     }
 
-    async deleteMessage(openId: string) {
-        return this.messageModel.deleteLatestMessageByOpenId(openId);
+    async deleteMessage(ids: string[]) {
+
+        return await db.transaction(async () => {
+            return await this.messageModel.deleteLatestMessagesByIds(ids);
+        })
     }
 
-    async handleDifyStream(stream: Readable, onMessage: (parsedData: { event: string, answer: string, conversation_id: string }) => void, onEnd: () => void, onError: (error: Error) => void) {
+    async handleDifyStream(stream: Readable, onMessage: (parsedData: {
+        event: string,
+        answer: string,
+        conversation_id: string,
+        message_id: string
+    }) => void, onEnd: () => void, onError: (error: Error) => void) {
 
         /*  let messageBuffer: string[] = [];
          const flushInterval = 0; // 每100ms尝试发送一次
@@ -307,18 +315,18 @@ export class ChatService {
                 history: [],
                 openId: openId
             });
-            let fullContent = '', conversationId = '';
+            let fullContent = '', conversationId = '', id = uuidv4();
             return await db.transaction(async () => {
 
                 await this.handleDifyStream(difyResponse,
                     (parsedData) => {
                         fullContent += parsedData.answer;
                         conversationId || (conversationId = parsedData.conversation_id);
+                        id || (id = parsedData.message_id);
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,
                             data: {
-                                conversationId,
-                                content: parsedData.answer,
+                                rawData: {...parsedData, conversationId, content: parsedData.answer, id},
                                 isComplete: false
                             }
                         });
@@ -333,7 +341,8 @@ export class ChatService {
                         )
 
                         // 创建 AI 消息记录
-                        const ms: Omit<Message, 'id' | 'createdAt'> = {
+                        const ms: Omit<Message, 'createdAt'> = {
+                            id,
                             conversationId: conversation.id,
                             content: fullContent,
                             role: 'assistant',
@@ -343,6 +352,7 @@ export class ChatService {
 
                         conversationId = '';// need to be deleted
                         fullContent='';
+                        id = '';
                         this.wsService.sendMessage(openId, {
                             type: wsMessageType.new_topic,
                             data: {
@@ -354,6 +364,7 @@ export class ChatService {
                     },
                     async (error: Error) => {
                         console.error('Dify 响应错误', { error });
+                        this.messageModel.updateStatus(id, 'failed');
                     });
 
                 return conversationId;
@@ -371,12 +382,12 @@ export class ChatService {
         }
     }
     async getNextSuggestions(openId: string) {
-        const messages = await this.getUserMessages(openId);
-        const lastMessage = messages[messages.length - 1];
+        /*const messages = await this.getUserMessages(openId);
+        const lastMessage = messages[messages.length - 1];*/
       
         const difyResponse = await this.difyService.streamChat({
             conversationId: '',
-            query: '根据知识库和上下文，你作为公司的专业营销人员，从产品和公司方面，生成提示词集合，结果用&分隔。\n'+lastMessage.content,
+            query: '根据知识库和上下文，你作为公司的专业营销人员，从产品和公司方面，生成提示词集合，结果用&分隔。',
             history: [],
             openId: openId
         });
@@ -389,7 +400,7 @@ export class ChatService {
                 this.wsService.sendMessage(openId, {
                     type: wsMessageType.suggestions,
                     data: {
-                        content: nextSuggestions,
+                        rawData: {...parsedData, content: parsedData.answer, id: parsedData.message_id},
                         isComplete: false
                     }
                 });
@@ -398,7 +409,7 @@ export class ChatService {
                 this.wsService.sendMessage(openId, {
                     type: wsMessageType.suggestions,
                     data: {
-                        content: nextSuggestions,
+                        rawData: {content: nextSuggestions},
                         isComplete: true
                     }
                 });

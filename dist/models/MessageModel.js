@@ -17,7 +17,7 @@ const db_1 = __importDefault(require("../database/db"));
 class MessageModel {
     create(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            const [result] = yield db_1.default.query('INSERT INTO messages (conversation_id, role, status, content) VALUES (?, ?, ?, ?)', [message.conversationId, message.role, message.status, message.content]);
+            const [result] = yield db_1.default.query('INSERT INTO messages (id, conversation_id, role, status, content) VALUES (?, ?, ?, ?, ?)', [message.id, message.conversationId, message.role, message.status, message.content]);
             const created = yield this.findById(result.insertId);
             if (!created)
                 throw new Error('Failed to create message');
@@ -61,6 +61,27 @@ class MessageModel {
             if (result.affectedRows === 0) {
                 throw new Error(`未能更新ID为 ${id} 的消息`);
             }
+        });
+    }
+    // 假设函数签名修改为根据多个 messageId 批量删除
+    deleteLatestMessagesByIds(ids) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!ids || ids.length === 0) {
+                // 如果不传或传入空数组，则无需删除
+                return 0;
+            }
+            // 构造适合 MySQL 的占位符
+            const placeholders = ids.map(() => '?').join(',');
+            const query = `
+    DELETE
+    FROM messages
+    WHERE id IN (${placeholders})
+  `;
+            // 执行批量删除
+            const [result] = yield db_1.default.query(query, ids);
+            // 可根据受影响的行数进行后续处理，比如日志记录
+            console.log('Deleted messages count:', result.affectedRows);
+            return result.affectedRows;
         });
     }
 }

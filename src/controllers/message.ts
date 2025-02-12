@@ -85,10 +85,11 @@ export const setupMessageController = (app: Express) => {
         }
     });
 
-    app.delete('/api/messages/:id', async (req: Request, res: Response) => {
+    app.delete('/api/messages', async (req: Request, res: Response) => {
         try {
             const openId = req.headers['x-wx-openid'] as string;
-            const message = await chatService.deleteMessage(openId)
+            const {ids} = req.body;
+            const message = await chatService.deleteMessage(ids)
 
             res.json({success: true, message});
 
@@ -164,7 +165,7 @@ export const setupMessageController = (app: Express) => {
             const { content } = req.body;
 
             const updatedMessage = await chatService.updateMessage(
-                Number(messageId),
+                messageId,
                 content
             );
 

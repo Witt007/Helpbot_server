@@ -3,10 +3,10 @@ import {Message} from '../entities/Message';
 import {ResultSetHeader, RowDataPacket} from 'mysql2';
 
 export class MessageModel {
-    async create(message: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
+    async create(message: Omit<Message, 'createdAt'>): Promise<Message> {
         const [result] = await db.query(
-            'INSERT INTO messages (conversation_id, role, status, content) VALUES (?, ?, ?, ?)',
-            [message.conversationId, message.role, message.status, message.content]
+            'INSERT INTO messages (id, conversation_id, role, status, content) VALUES (?, ?, ?, ?, ?)',
+            [message.id, message.conversationId, message.role, message.status, message.content]
         ) as unknown as [ResultSetHeader, any];
         const created = await this.findById(result.insertId);
         if (!created) throw new Error('Failed to create message');
@@ -26,7 +26,7 @@ export class MessageModel {
         return rows as Message[];
     }
 
-    async updateStatus(id: number, status: Message['status']): Promise<void> {
+    async updateStatus(id: string, status: Message['status']): Promise<void> {
         const [result] = await db.query(
             'UPDATE messages SET status = ? WHERE id = ?', 
             [status, id]
@@ -47,7 +47,7 @@ export class MessageModel {
         return messages as Message[];
     }
 
-    async updateContent(id: number, content: string): Promise<void> {
+    async updateContent(id: string, content: string): Promise<void> {
         const [result] = await db.query(
             'UPDATE messages SET content = ? WHERE id = ?',
             [content, id]
@@ -58,25 +58,29 @@ export class MessageModel {
         }
     }
 
+// 假设函数签名修改为根据多个 messageId 批量删除
+    public async deleteLatestMessagesByIds(ids: string[]): Promise<number> {
+        if (!ids || ids.length === 0) {
+            // 如果不传或传入空数组，则无需删除
+            return 0;
+        }
 
-    async deleteLatestMessageByOpenId(openId: string): Promise<number> {
+        // 构造适合 MySQL 的占位符
+        const placeholders = ids.map(() => '?').join(',');
+
         const query = `
             DELETE
             FROM messages
-            WHERE id = (SELECT sub.id
-                        FROM (SELECT m.id
-                              FROM messages m
-                                       JOIN chat_sessions cs ON m.conversation_id = cs.id
-                              WHERE cs.open_id = ?
-                              ORDER BY m.id DESC LIMIT 1) sub)
+            WHERE id IN (${placeholders})
         `;
 
-        const [result] = await db.query(query, [openId]) as unknown as [ResultSetHeader, any];
+        // 执行批量删除
+        const [result] = await db.query(query, ids) as unknown as [ResultSetHeader, any];
 
+        // 可根据受影响的行数进行后续处理，比如日志记录
+        console.log('Deleted messages count:', result.affectedRows);
 
-        if (result.affectedRows === 0) {
-            console.error(`未能删除 openId 为 ${openId} 的最新消息`);
-        }
         return result.affectedRows;
     }
+
 } 

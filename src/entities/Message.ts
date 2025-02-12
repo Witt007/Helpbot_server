@@ -1,5 +1,5 @@
 export interface Message {
-    id: number;
+    id: string;
     conversationId: string;
     role: 'user' | 'assistant';
     status: 'sending' | 'sent' | 'failed';
