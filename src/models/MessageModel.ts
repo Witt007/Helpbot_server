@@ -1,6 +1,6 @@
-import  db  from '../database/db';
-import { Message } from '../entities/Message';
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import db from '../database/db';
+import {Message} from '../entities/Message';
+import {ResultSetHeader, RowDataPacket} from 'mysql2';
 
 export class MessageModel {
     async create(message: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
@@ -56,5 +56,27 @@ export class MessageModel {
         if (result.affectedRows === 0) {
             throw new Error(`未能更新ID为 ${id} 的消息`);
         }
+    }
+
+
+    async deleteLatestMessageByOpenId(openId: string): Promise<number> {
+        const query = `
+            DELETE
+            FROM messages
+            WHERE id = (SELECT sub.id
+                        FROM (SELECT m.id
+                              FROM messages m
+                                       JOIN chat_sessions cs ON m.conversation_id = cs.id
+                              WHERE cs.open_id = ?
+                              ORDER BY m.id DESC LIMIT 1) sub)
+        `;
+
+        const [result] = await db.query(query, [openId]) as unknown as [ResultSetHeader, any];
+
+
+        if (result.affectedRows === 0) {
+            console.error(`未能删除 openId 为 ${openId} 的最新消息`);
+        }
+        return result.affectedRows;
     }
 } 

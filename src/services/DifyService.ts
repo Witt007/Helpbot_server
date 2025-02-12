@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { Readable } from 'stream';
-import { config } from '../config';
+import {Readable} from 'stream';
+import {config} from '../config';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
@@ -8,8 +8,8 @@ interface ChatMessage {
 }
 
 export class DifyService {
-    private apiKey: string;
-    private baseUrl: string;
+    apiKey: string;
+    baseUrl: string;
 
     constructor() {
         this.apiKey = config.dify.apiKey;

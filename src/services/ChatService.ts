@@ -179,6 +179,10 @@ export class ChatService {
         await this.messageModel.updateContent(messageId, content);
     }
 
+    async deleteMessage(openId: string) {
+        return this.messageModel.deleteLatestMessageByOpenId(openId);
+    }
+
     async handleDifyStream(stream: Readable, onMessage: (parsedData: { event: string, answer: string, conversation_id: string }) => void, onEnd: () => void, onError: (error: Error) => void) {
 
         /*  let messageBuffer: string[] = [];

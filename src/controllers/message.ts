@@ -1,8 +1,69 @@
-import { Express, Request, Response } from 'express';
-import { ChatService } from '../services/ChatService';
+import {Express, Request, Response} from 'express';
+import {ChatService} from '../services/ChatService';
+import * as crypto from "node:crypto";
+
+function verifySignature(signature: string, timestamp: string, nonce: string, echostr: string) {
+    // TODO: 在此处完成签名算法验证逻辑
+    // 例如和你的 token 一起进行 SHA1 校验等
+    // 返回 true 表示验证通过
+
+    // 计算签名
+    const TOKEN = '你的Token占位符';
+
+    const hash = crypto.createHash('sha1');
+    const sortedParams = [TOKEN, timestamp, nonce].sort().join('');
+    hash.update(sortedParams);
+    const mySignature = hash.digest('hex');
+
+    // 对比签名，一致则返回 echostr 给微信服务器
+    if (mySignature === signature) {
+        return echostr;
+    } else {
+        return 'error'
+    }
+    return true;
+}
+
 
 export const setupMessageController = (app: Express) => {
     const chatService = new ChatService();
+
+    app.get('/api/push', (req, res) => {
+        console.log(
+            'Received GET request for /api/push',
+            req.query,
+            req.headers);
+        return res.send('hello');
+    });
+
+
+    app.post('/api/push', async (req: Request, res: Response) => {
+        try {
+            const {signature, timestamp, nonce, echostr} = req.query;
+
+            console.log(
+                'Received POST request for /api/push',
+                req.query,
+                req.headers,
+                req.body)
+            // 如果需要签名验证，可在此调用验证方法
+            if (!verifySignature(signature as string, timestamp as string, nonce as string, echostr as string)) {
+                return res.status(403).json({success: false, message: '签名验证失败'});
+            }
+
+            // 获取推送的主体数据
+            const data = req.body;
+            // 这里可以根据推送内容（如文本消息、事件消息等）进行不同的业务处理
+            // 示例：存储消息到数据库，或根据消息类型触发特定逻辑
+
+            // 返回处理成功
+            return res.status(200).json({success: true, message: '消息接收成功'});
+        } catch (error) {
+            console.error('Error handling push message:', error);
+            return res.status(500).json({success: false, message: '服务器端错误'});
+        }
+
+    })
 
     // 发送消息 (初始消息，通过 HTTP 触发，然后切换到 WebSocket 流式接收)
     app.post('/api/messages', async (req: Request, res: Response) => {
@@ -21,6 +82,19 @@ export const setupMessageController = (app: Express) => {
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '未知错误';
             res.status(500).json({ success: false, error: errorMessage });
+        }
+    });
+
+    app.delete('/api/messages/:id', async (req: Request, res: Response) => {
+        try {
+            const openId = req.headers['x-wx-openid'] as string;
+            const message = await chatService.deleteMessage(openId)
+
+            res.json({success: true, message});
+
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : '未知错误';
+            res.status(500).json({success: false, error: errorMessage});
         }
     });
 
