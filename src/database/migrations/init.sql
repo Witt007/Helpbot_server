@@ -27,5 +27,6 @@ CREATE TABLE IF NOT EXISTS messages (
     status ENUM('sending', 'sent', 'failed') NOT NULL,
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (conversation_id) REFERENCES chat_sessions(id)
+                                        FOREIGN KEY (conversation_id) REFERENCES chat_sessions (id),
+                                        UNIQUE KEY (sort_index)
 ); 
