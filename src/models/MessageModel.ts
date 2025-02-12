@@ -39,7 +39,7 @@ export class MessageModel {
             FROM messages m
             JOIN chat_sessions cs ON m.conversation_id = cs.id
             WHERE cs.open_id = ?
-            ORDER BY m.id DESC
+            ORDER BY m.created_at DESC
             LIMIT ? OFFSET ?
         `;
         

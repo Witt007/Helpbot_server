@@ -48,7 +48,7 @@ class MessageModel {
             FROM messages m
             JOIN chat_sessions cs ON m.conversation_id = cs.id
             WHERE cs.open_id = ?
-            ORDER BY m.id DESC
+            ORDER BY m.created_at DESC
             LIMIT ? OFFSET ?
         `;
             const [messages] = yield db_1.default.query(query, [openId, limit, offset]);
@@ -73,10 +73,10 @@ class MessageModel {
             // 构造适合 MySQL 的占位符
             const placeholders = ids.map(() => '?').join(',');
             const query = `
-    DELETE
-    FROM messages
-    WHERE id IN (${placeholders})
-  `;
+            DELETE
+            FROM messages
+            WHERE id IN (${placeholders})
+        `;
             // 执行批量删除
             const [result] = yield db_1.default.query(query, ids);
             // 可根据受影响的行数进行后续处理，比如日志记录
