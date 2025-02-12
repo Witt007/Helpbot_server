@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS chat_sessions (
 );
 
 CREATE TABLE IF NOT EXISTS messages (
-                                        id VARCHAR(100) PRIMARY KEY,
+                                        sort_index BIGINT AUTO_INCREMENT,
+                                        id         VARCHAR(100) PRIMARY KEY,
     conversation_id VARCHAR(100) NOT NULL,
     role ENUM('user', 'assistant') NOT NULL,
     status ENUM('sending', 'sent', 'failed') NOT NULL,
