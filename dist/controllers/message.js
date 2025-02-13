@@ -178,10 +178,11 @@ const setupMessageController = (app) => {
         }
     }));
     // 获取下一步建议问题
-    app.get('/api/getquestions', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    app.post('/api/getquestions', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const openId = req.headers['x-wx-openid'];
-            const suggestions = yield chatService.getNextSuggestions(openId, req.body.query || '');
+            const query = req.body.query;
+            const suggestions = yield chatService.getNextSuggestions(openId, query || '');
             res.json({ success: true, suggestions });
         }
         catch (error) {
