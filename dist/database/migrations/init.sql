@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS wx_users (
 
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id VARCHAR(100) PRIMARY KEY,
-    open_id VARCHAR(100) NOT NULL UNIQUE,
+    open_id VARCHAR(100) NOT NULL,
     title VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -20,11 +20,14 @@ CREATE TABLE IF NOT EXISTS chat_sessions (
 );
 
 CREATE TABLE IF NOT EXISTS messages (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                        sort_index BIGINT AUTO_INCREMENT,
+                                        id         VARCHAR(100) PRIMARY KEY,
     conversation_id VARCHAR(100) NOT NULL,
     role ENUM('user', 'assistant') NOT NULL,
     status ENUM('sending', 'sent', 'failed') NOT NULL,
-    content TEXT NOT NULL,
+                                        content    TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (conversation_id) REFERENCES chat_sessions(id)
+                                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                        FOREIGN KEY (conversation_id) REFERENCES chat_sessions (id),
+                                        UNIQUE KEY (sort_index)
 ); 
