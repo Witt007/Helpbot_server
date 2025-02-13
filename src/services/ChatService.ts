@@ -80,89 +80,93 @@ export class ChatService {
             return await db.transaction(async () => {
 
                 let fullContent = '', peerId = uuidv4(), id = uuidv4();
+                let userMessage;
+                try {
 
-                // 保存用户消息
-                const userMessage = await this.messageModel.create({
-                    id: peerId,
-                    conversationId: data.conversationId,
-                    content: data.content,
-                    role: data.role,
-                    status: 'sent'
-                });
-
-                // 创建 AI 回复消息记录
-                const aiMessage = await this.messageModel.create({
-                    conversationId: data.conversationId,
-                    content: '',
-                    role: 'assistant',
-                    status: 'sending',
-                    id: id
-                });
-
-                // 获取会话历史消息
-                const history = await this.getSessionMessages(data.conversationId);
-
-                // 调用 Dify 流式接口
-                const stream = await this.difyService.streamChat({
-                    query: data.content,
-                    history: history.map(msg => ({
-                        role: msg.role,
-                        content: msg.content
-                    })),
-                    openId: data.openId,
-                    conversationId: data.conversationId
-                });
-                this.handleDifyStream(stream,
-                    (parsedData) => {
-                        fullContent += parsedData.answer;
-                        // WebSocket 发送失败时，将消息状态标记为需要轮询
-                        if (!this.wsService.sendMessage(data.openId, {
-                            type: wsMessageType.answer,
-                            data: {
-                                rawData: {...parsedData, content: parsedData.answer, id, peerId, role: "assistant"},
-                                isComplete: false
-                            }
-                        })) {
-                            logger.warn('WebSocket 消息发送失败，客户端可能已断开', {
-                                openId: data.openId,
-                                messageId: aiMessage.id
-                            });
-                        }
-                    },
-                    async () => {
-                        // 更新 AI 消息内容和状态
-                        await this.messageModel.updateContent(id, fullContent);
-                        await this.messageModel.updateStatus(id, 'sent');
-
-                        // 发送完成信号
-                        if (this.wsService.isConnected(data.openId)) {
-                            this.wsService.sendMessage(data.openId, {
-                                type: wsMessageType.answer,
-                                data: {
-                                    rawData: {...aiMessage, content: fullContent, id, peerId},
-                                    isComplete: true
-                                }
-                            });
-                        }
-
-                        await this.cache.del(`conversation_messages:${data.conversationId}`);
-                    },
-                    async (error: Error) => {
-                        logger.error('Dify 响应错误', { error, messageId: aiMessage.id });
-                        await this.messageModel.updateStatus(id, 'failed');
-
-                        if (this.wsService.isConnected(data.openId)) {
-                            this.wsService.sendMessage(data.openId, {
-                                type: wsMessageType.error,
-                                data: {
-                                    messageId: aiMessage.id,
-                                    error: '消息处理失败'
-                                }
-                            });
-                        }
+                    // 保存用户消息
+                    userMessage = await this.messageModel.create({
+                        id: peerId,
+                        conversationId: data.conversationId,
+                        content: data.content,
+                        role: data.role,
+                        status: 'sent'
                     });
 
+                    // 创建 AI 回复消息记录
+                    const aiMessage = await this.messageModel.create({
+                        conversationId: data.conversationId,
+                        content: '',
+                        role: 'assistant',
+                        status: 'sending',
+                        id: id
+                    });
 
+                    // 获取会话历史消息
+                    const history = await this.getSessionMessages(data.conversationId);
+
+                    // 调用 Dify 流式接口
+                    const stream = await this.difyService.streamChat({
+                        query: data.content,
+                        history: history.map(msg => ({
+                            role: msg.role,
+                            content: msg.content
+                        })),
+                        openId: data.openId,
+                        conversationId: data.conversationId
+                    });
+                    this.handleDifyStream(stream,
+                        (parsedData) => {
+                            fullContent += parsedData.answer;
+                            // WebSocket 发送失败时，将消息状态标记为需要轮询
+                            if (!this.wsService.sendMessage(data.openId, {
+                                type: wsMessageType.answer,
+                                data: {
+                                    rawData: {...parsedData, content: parsedData.answer, id, peerId, role: "assistant"},
+                                    isComplete: false
+                                }
+                            })) {
+                                logger.warn('WebSocket 消息发送失败，客户端可能已断开', {
+                                    openId: data.openId,
+                                    messageId: aiMessage.id
+                                });
+                            }
+                        },
+                        async () => {
+                            // 更新 AI 消息内容和状态
+                            await this.messageModel.updateContent(id, fullContent);
+                            await this.messageModel.updateStatus(id, 'sent');
+
+                            // 发送完成信号
+                            if (this.wsService.isConnected(data.openId)) {
+                                this.wsService.sendMessage(data.openId, {
+                                    type: wsMessageType.answer,
+                                    data: {
+                                        rawData: {...aiMessage, content: fullContent, id, peerId},
+                                        isComplete: true
+                                    }
+                                });
+                            }
+
+                            await this.cache.del(`conversation_messages:${data.conversationId}`);
+                        },
+                        async (error: Error) => {
+                            logger.error('Dify 响应错误', {error, messageId: aiMessage.id});
+                            await this.messageModel.updateStatus(id, 'failed');
+
+                            if (this.wsService.isConnected(data.openId)) {
+                                this.wsService.sendMessage(data.openId, {
+                                    type: wsMessageType.error,
+                                    data: {
+                                        messageId: aiMessage.id,
+                                        error: '消息处理失败'
+                                    }
+                                });
+                            }
+                        });
+
+                } catch (e: unknown) {
+                    throw e
+                }
 
                 return userMessage;
             });
@@ -287,17 +291,19 @@ export class ChatService {
 
     async getUserMessages(openId: string, offset: number = 0, limit: number = 10): Promise<Message[]> {
         try {
+            /*    不能使用缓存 存在问题 会导致更新的内容无法返回
             const cacheKey = `user_messages:${openId}:${offset}:${limit}`;
-            const cachedMessages = await this.cache.get<Message[]>(cacheKey);
+             */
+            /*   const cachedMessages = await this.cache.get<Message[]>(cacheKey);
 
-            if (cachedMessages) {
-                return cachedMessages;
-            }
+         *  if (cachedMessages) {
+                  return cachedMessages;
+              }*/
 
             const messages = await this.messageModel.findUserMessages(openId, offset, limit);
 
             // 设置缓存，有效期5分钟
-            await this.cache.set(cacheKey, messages, 300);
+            //await this.cache.set(cacheKey, messages, 300);
 
             return messages;
         } catch (error) {
