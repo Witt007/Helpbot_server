@@ -344,13 +344,13 @@ class ChatService {
             }
         });
     }
-    getNextSuggestions(openId) {
+    getNextSuggestions(openId, query) {
         return __awaiter(this, void 0, void 0, function* () {
             /*const messages = await this.getUserMessages(openId);
             const lastMessage = messages[messages.length - 1];*/
             const difyResponse = yield this.difyService.streamChat({
                 conversationId: '',
-                query: '根据知识库和上下文，你作为公司的专业营销人员，从产品和公司方面，生成提示词集合，结果用&分隔。',
+                query,
                 history: [],
                 openId: openId
             });

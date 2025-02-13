@@ -181,7 +181,7 @@ const setupMessageController = (app) => {
     app.get('/api/getquestions', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const openId = req.headers['x-wx-openid'];
-            const suggestions = yield chatService.getNextSuggestions(openId);
+            const suggestions = yield chatService.getNextSuggestions(openId, req.body.query || '');
             res.json({ success: true, suggestions });
         }
         catch (error) {

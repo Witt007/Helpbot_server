@@ -181,7 +181,7 @@ export const setupMessageController = (app: Express) => {
         try {
             const openId = req.headers['x-wx-openid'] as string;
 
-            const suggestions = await chatService.getNextSuggestions(openId);
+            const suggestions = await chatService.getNextSuggestions(openId, req.body.query || '');
             res.json({ success: true, suggestions });
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '未知错误';

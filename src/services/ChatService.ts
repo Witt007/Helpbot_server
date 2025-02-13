@@ -390,13 +390,14 @@ export class ChatService {
             throw new Error('生成话题失败');
         }
     }
-    async getNextSuggestions(openId: string) {
+
+    async getNextSuggestions(openId: string, query: string) {
         /*const messages = await this.getUserMessages(openId);
         const lastMessage = messages[messages.length - 1];*/
       
         const difyResponse = await this.difyService.streamChat({
             conversationId: '',
-            query: '根据知识库和上下文，你作为公司的专业营销人员，从产品和公司方面，生成提示词集合，结果用&分隔。',
+            query,
             history: [],
             openId: openId
         });
