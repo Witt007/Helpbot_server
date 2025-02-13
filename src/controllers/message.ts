@@ -177,11 +177,11 @@ export const setupMessageController = (app: Express) => {
     });
 
     // 获取下一步建议问题
-    app.get('/api/getquestions', async (req: Request, res: Response) => {
+    app.post('/api/getquestions', async (req: Request, res: Response) => {
         try {
             const openId = req.headers['x-wx-openid'] as string;
-
-            const suggestions = await chatService.getNextSuggestions(openId, req.body.query || '');
+            const query = req.body.query as string;
+            const suggestions = await chatService.getNextSuggestions(openId, query || '');
             res.json({ success: true, suggestions });
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '未知错误';
