@@ -8,12 +8,12 @@ export class MessageModel {
             'INSERT INTO messages (id, conversation_id, role, status, content) VALUES (?, ?, ?, ?, ?)',
             [message.id, message.conversationId, message.role, message.status, message.content]
         ) as unknown as [ResultSetHeader, any];
-        const created = await this.findById(result.insertId);
+        const created = await this.findById(message.id);
         if (!created) throw new Error('Failed to create message');
         return created;
     }
 
-    async findById(id: number): Promise<Message | null> {
+    async findById(id: string): Promise<Message | null> {
         const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM messages WHERE id = ?', [id]);
         return rows[0] as Message || null;
     }
