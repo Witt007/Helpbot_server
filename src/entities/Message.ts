@@ -5,4 +5,6 @@ export interface Message {
     status: 'sending' | 'sent' | 'failed';
     content: string;
     createdAt: Date;
+    updatedAt?: Date;
+    sort_index?: number;
 } 

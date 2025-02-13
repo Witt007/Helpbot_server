@@ -80,6 +80,11 @@ export class ChatService {
             return await db.transaction(async () => {
 
                 let fullContent = '', peerId = uuidv4(), id = uuidv4();
+                console.log(
+                    'peerId',
+                    peerId,
+                    'id',
+                    id)
                 let userMessage;
                 try {
 
@@ -91,19 +96,25 @@ export class ChatService {
                         role: data.role,
                         status: 'sent'
                     });
-
+                    console.log(
+                        'userMessage',
+                        userMessage)
                     // 创建 AI 回复消息记录
                     const aiMessage = await this.messageModel.create({
                         conversationId: data.conversationId,
                         content: '',
                         role: 'assistant',
                         status: 'sending',
-                        id: id
+                        id
                     });
-
+                    console.log(
+                        'aiMessage',
+                        aiMessage)
                     // 获取会话历史消息
                     const history = await this.getSessionMessages(data.conversationId);
-
+                    console.log(
+                        'history',
+                        history)
                     // 调用 Dify 流式接口
                     const stream = await this.difyService.streamChat({
                         query: data.content,
