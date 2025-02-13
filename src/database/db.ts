@@ -1,5 +1,5 @@
-import mysql, { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import { config } from '../config';
+import mysql, {Pool, PoolConnection} from 'mysql2/promise';
+import {config} from '../config/index';
 import fs from 'fs';
 import path from 'path';
 

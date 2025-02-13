@@ -20,7 +20,7 @@ export class MessageModel {
 
     async findByConversationId(conversationId: string): Promise<Message[]> {
         const [rows] = await db.query<RowDataPacket[]>(
-            'SELECT * FROM messages WHERE conversation_id = ?', 
+            'SELECT * FROM messages WHERE conversation_id = ? order by sort_index desc',
             [conversationId]
         );
         return rows as Message[];

@@ -96,7 +96,7 @@ export class ChatService {
                     content: '',
                     role: 'assistant',
                     status: 'sending',
-                    id
+                    id: id
                 });
 
                 // 获取会话历史消息
