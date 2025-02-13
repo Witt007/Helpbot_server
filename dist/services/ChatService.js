@@ -78,77 +78,84 @@ class ChatService {
                 //await validate(validators.message, data);
                 return yield db_1.default.transaction(() => __awaiter(this, void 0, void 0, function* () {
                     let fullContent = '', peerId = (0, uuid_1.v4)(), id = (0, uuid_1.v4)();
-                    // 保存用户消息
-                    const userMessage = yield this.messageModel.create({
-                        id: peerId,
-                        conversationId: data.conversationId,
-                        content: data.content,
-                        role: data.role,
-                        status: 'sent'
-                    });
-                    // 创建 AI 回复消息记录
-                    const aiMessage = yield this.messageModel.create({
-                        conversationId: data.conversationId,
-                        content: '',
-                        role: 'assistant',
-                        status: 'sending',
-                        id
-                    });
-                    // 获取会话历史消息
-                    const history = yield this.getSessionMessages(data.conversationId);
-                    // 调用 Dify 流式接口
-                    const stream = yield this.difyService.streamChat({
-                        query: data.content,
-                        history: history.map(msg => ({
-                            role: msg.role,
-                            content: msg.content
-                        })),
-                        openId: data.openId,
-                        conversationId: data.conversationId
-                    });
-                    this.handleDifyStream(stream, (parsedData) => {
-                        fullContent += parsedData.answer;
-                        // WebSocket 发送失败时，将消息状态标记为需要轮询
-                        if (!this.wsService.sendMessage(data.openId, {
-                            type: wsMessageType.answer,
-                            data: {
-                                rawData: Object.assign(Object.assign({}, parsedData), { content: parsedData.answer, id, peerId, role: "assistant" }),
-                                isComplete: false
-                            }
-                        })) {
-                            logger_1.logger.warn('WebSocket 消息发送失败，客户端可能已断开', {
-                                openId: data.openId,
-                                messageId: aiMessage.id
-                            });
-                        }
-                    }, () => __awaiter(this, void 0, void 0, function* () {
-                        // 更新 AI 消息内容和状态
-                        yield this.messageModel.updateContent(id, fullContent);
-                        yield this.messageModel.updateStatus(id, 'sent');
-                        // 发送完成信号
-                        if (this.wsService.isConnected(data.openId)) {
-                            this.wsService.sendMessage(data.openId, {
+                    console.log('peerId', peerId, 'id', id);
+                    let userMessage;
+                    try {
+                        // 保存用户消息
+                        userMessage = yield this.messageModel.create({
+                            id: peerId,
+                            conversationId: data.conversationId,
+                            content: data.content,
+                            role: data.role,
+                            status: 'sent'
+                        });
+                        // 创建 AI 回复消息记录
+                        const aiMessage = yield this.messageModel.create({
+                            conversationId: data.conversationId,
+                            content: '',
+                            role: 'assistant',
+                            status: 'sending',
+                            id
+                        });
+                        // 获取会话历史消息
+                        const history = yield this.getSessionMessages(data.conversationId);
+                        // 调用 Dify 流式接口
+                        const stream = yield this.difyService.streamChat({
+                            query: data.content,
+                            history: history.map(msg => ({
+                                role: msg.role,
+                                content: msg.content
+                            })),
+                            openId: data.openId,
+                            conversationId: data.conversationId
+                        });
+                        this.handleDifyStream(stream, (parsedData) => {
+                            fullContent += parsedData.answer;
+                            // WebSocket 发送失败时，将消息状态标记为需要轮询
+                            if (!this.wsService.sendMessage(data.openId, {
                                 type: wsMessageType.answer,
                                 data: {
-                                    rawData: Object.assign(Object.assign({}, aiMessage), { content: fullContent, id, peerId }),
-                                    isComplete: true
+                                    rawData: Object.assign(Object.assign({}, parsedData), { content: parsedData.answer, id, peerId, role: "assistant" }),
+                                    isComplete: false
                                 }
-                            });
-                        }
-                        yield this.cache.del(`conversation_messages:${data.conversationId}`);
-                    }), (error) => __awaiter(this, void 0, void 0, function* () {
-                        logger_1.logger.error('Dify 响应错误', { error, messageId: aiMessage.id });
-                        yield this.messageModel.updateStatus(id, 'failed');
-                        if (this.wsService.isConnected(data.openId)) {
-                            this.wsService.sendMessage(data.openId, {
-                                type: wsMessageType.error,
-                                data: {
-                                    messageId: aiMessage.id,
-                                    error: '消息处理失败'
-                                }
-                            });
-                        }
-                    }));
+                            })) {
+                                logger_1.logger.warn('WebSocket 消息发送失败，客户端可能已断开', {
+                                    openId: data.openId,
+                                    messageId: aiMessage.id
+                                });
+                            }
+                        }, () => __awaiter(this, void 0, void 0, function* () {
+                            // 更新 AI 消息内容和状态
+                            yield this.messageModel.updateContent(id, fullContent);
+                            yield this.messageModel.updateStatus(id, 'sent');
+                            // 发送完成信号
+                            if (this.wsService.isConnected(data.openId)) {
+                                this.wsService.sendMessage(data.openId, {
+                                    type: wsMessageType.answer,
+                                    data: {
+                                        rawData: Object.assign(Object.assign({}, aiMessage), { content: fullContent, id, peerId }),
+                                        isComplete: true
+                                    }
+                                });
+                            }
+                            yield this.cache.del(`conversation_messages:${data.conversationId}`);
+                        }), (error) => __awaiter(this, void 0, void 0, function* () {
+                            logger_1.logger.error('Dify 响应错误', { error, messageId: aiMessage.id });
+                            yield this.messageModel.updateStatus(id, 'failed');
+                            if (this.wsService.isConnected(data.openId)) {
+                                this.wsService.sendMessage(data.openId, {
+                                    type: wsMessageType.error,
+                                    data: {
+                                        messageId: aiMessage.id,
+                                        error: '消息处理失败'
+                                    }
+                                });
+                            }
+                        }));
+                    }
+                    catch (e) {
+                        throw e;
+                    }
                     return userMessage;
                 }));
             }
@@ -259,14 +266,17 @@ class ChatService {
     getUserMessages(openId, offset = 0, limit = 10) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                /*    不能使用缓存 存在问题 会导致更新的内容无法返回
                 const cacheKey = `user_messages:${openId}:${offset}:${limit}`;
-                const cachedMessages = yield this.cache.get(cacheKey);
-                if (cachedMessages) {
-                    return cachedMessages;
-                }
+                 */
+                /*   const cachedMessages = await this.cache.get<Message[]>(cacheKey);
+    
+             *  if (cachedMessages) {
+                      return cachedMessages;
+                  }*/
                 const messages = yield this.messageModel.findUserMessages(openId, offset, limit);
                 // 设置缓存，有效期5分钟
-                yield this.cache.set(cacheKey, messages, 300);
+                //await this.cache.set(cacheKey, messages, 300);
                 return messages;
             }
             catch (error) {

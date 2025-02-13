@@ -18,7 +18,7 @@ class MessageModel {
     create(message) {
         return __awaiter(this, void 0, void 0, function* () {
             const [result] = yield db_1.default.query('INSERT INTO messages (id, conversation_id, role, status, content) VALUES (?, ?, ?, ?, ?)', [message.id, message.conversationId, message.role, message.status, message.content]);
-            const created = yield this.findById(result.insertId);
+            const created = yield this.findById(message.id);
             if (!created)
                 throw new Error('Failed to create message');
             return created;
@@ -32,7 +32,7 @@ class MessageModel {
     }
     findByConversationId(conversationId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const [rows] = yield db_1.default.query('SELECT * FROM messages WHERE conversation_id = ?', [conversationId]);
+            const [rows] = yield db_1.default.query('SELECT * FROM messages WHERE conversation_id = ? order by sort_index desc', [conversationId]);
             return rows;
         });
     }
@@ -48,7 +48,7 @@ class MessageModel {
             FROM messages m
             JOIN chat_sessions cs ON m.conversation_id = cs.id
             WHERE cs.open_id = ?
-            ORDER BY m.created_at DESC
+            ORDER BY m.sort_index DESC
             LIMIT ? OFFSET ?
         `;
             const [messages] = yield db_1.default.query(query, [openId, limit, offset]);

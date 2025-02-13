@@ -14,17 +14,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initDatabase = void 0;
 const promise_1 = __importDefault(require("mysql2/promise"));
-const config_1 = require("../config");
+const index_1 = require("../config/index");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 class Database {
     constructor() {
         this.pool = promise_1.default.createPool({
-            host: config_1.config.db.host,
-            port: config_1.config.db.port,
-            user: config_1.config.db.user,
-            password: config_1.config.db.password,
-            timezone: config_1.config.db.timezone,
+            host: index_1.config.db.host,
+            port: index_1.config.db.port,
+            user: index_1.config.db.user,
+            password: index_1.config.db.password,
+            timezone: index_1.config.db.timezone,
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0
@@ -41,7 +41,7 @@ class Database {
     }
     dropDatabase() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.pool.query(`DROP DATABASE ${config_1.config.db.database}`);
+            yield this.pool.query(`DROP DATABASE ${index_1.config.db.database}`);
         });
     }
     query(sql, values) {
@@ -77,7 +77,7 @@ class Database {
     }
     useDB() {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.pool.query(`USE ${config_1.config.db.database}`);
+            return this.pool.query(`USE ${index_1.config.db.database}`);
         });
     }
     // 初始化数据库
@@ -101,9 +101,9 @@ class Database {
     createDatabaseIfNotExists() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield this.pool.query(`CREATE DATABASE IF NOT EXISTS ${config_1.config.db.database} 
+                yield this.pool.query(`CREATE DATABASE IF NOT EXISTS ${index_1.config.db.database} 
                  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-                console.log(`数据库 ${config_1.config.db.database} 检查/创建完成`);
+                console.log(`数据库 ${index_1.config.db.database} 检查/创建完成`);
             }
             catch (error) {
                 console.error('创建数据库失败:', error);
