@@ -30,6 +30,7 @@ var wsMessageType;
     wsMessageType["suggestions"] = "suggestions";
     wsMessageType["announcement"] = "announcement";
 })(wsMessageType || (wsMessageType = {}));
+const msgDeleted = new cache_1.Cache('msg_deleted:');
 class ChatService {
     constructor() {
         this.sessionModel = new ChatSessionModel_1.ChatSessionModel();
@@ -111,21 +112,28 @@ class ChatService {
                             conversationId: data.conversationId
                         });
                         this.handleDifyStream(stream, (parsedData) => {
-                            fullContent += parsedData.answer;
-                            // WebSocket 发送失败时，将消息状态标记为需要轮询
-                            if (!this.wsService.sendMessage(data.openId, {
-                                type: wsMessageType.answer,
-                                data: {
-                                    rawData: Object.assign(Object.assign({}, parsedData), { content: parsedData.answer, id, peerId, role: "assistant" }),
-                                    isComplete: false
+                            msgDeleted.get(id).then((res) => {
+                                if (res)
+                                    return;
+                                fullContent += parsedData.answer;
+                                // WebSocket 发送失败时，将消息状态标记为需要轮询
+                                if (!this.wsService.sendMessage(data.openId, {
+                                    type: wsMessageType.answer,
+                                    data: {
+                                        rawData: Object.assign(Object.assign({}, parsedData), { content: parsedData.answer, id, peerId, role: "assistant" }),
+                                        isComplete: false
+                                    }
+                                })) {
+                                    logger_1.logger.warn('WebSocket 消息发送失败，客户端可能已断开', {
+                                        openId: data.openId,
+                                        messageId: aiMessage.id
+                                    });
                                 }
-                            })) {
-                                logger_1.logger.warn('WebSocket 消息发送失败，客户端可能已断开', {
-                                    openId: data.openId,
-                                    messageId: aiMessage.id
-                                });
-                            }
+                            });
                         }, () => __awaiter(this, void 0, void 0, function* () {
+                            const res = yield msgDeleted.get(id);
+                            if (res)
+                                return;
                             // 更新 AI 消息内容和状态
                             yield this.messageModel.updateContent(id, fullContent);
                             yield this.messageModel.updateStatus(id, 'sent');
@@ -177,7 +185,9 @@ class ChatService {
     deleteMessage(ids) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield db_1.default.transaction(() => __awaiter(this, void 0, void 0, function* () {
-                return yield this.messageModel.deleteLatestMessagesByIds(ids);
+                const res = yield this.messageModel.deleteLatestMessagesByIds(ids);
+                msgDeleted.set(ids[0], true);
+                return res;
             }));
         });
     }

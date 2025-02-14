@@ -19,6 +19,8 @@ enum wsMessageType {
     announcement = 'announcement'
 }
 
+const msgDeleted = new Cache('msg_deleted:');
+
 export class ChatService {
     private sessionModel = new ChatSessionModel();
     private messageModel = new MessageModel();
@@ -120,6 +122,8 @@ export class ChatService {
                     });
                     this.handleDifyStream(stream,
                         (parsedData) => {
+                            msgDeleted.get(id).then((res) => {
+                                if (res) return;
                             fullContent += parsedData.answer;
                             // WebSocket 发送失败时，将消息状态标记为需要轮询
                             if (!this.wsService.sendMessage(data.openId, {
@@ -134,8 +138,13 @@ export class ChatService {
                                     messageId: aiMessage.id
                                 });
                             }
+
+                            })
                         },
                         async () => {
+
+                            const res = await msgDeleted.get(id)
+                            if (res) return;
                             // 更新 AI 消息内容和状态
                             await this.messageModel.updateContent(id, fullContent);
                             await this.messageModel.updateStatus(id, 'sent');
@@ -188,9 +197,11 @@ export class ChatService {
     }
 
     async deleteMessage(ids: string[]) {
-
         return await db.transaction(async () => {
-            return await this.messageModel.deleteLatestMessagesByIds(ids);
+            const res = await this.messageModel.deleteLatestMessagesByIds(ids);
+            msgDeleted.set(
+                ids[0], true)
+            return res;
         })
     }
 
