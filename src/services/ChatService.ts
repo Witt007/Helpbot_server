@@ -15,7 +15,8 @@ enum wsMessageType {
     answer = 'answer',
     new_topic = 'new_topic',
     error = 'error',
-    suggestions = 'suggestions'
+    suggestions = 'suggestions',
+    announcement = 'announcement'
 }
 
 export class ChatService {

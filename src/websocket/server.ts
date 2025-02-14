@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
-import { Server } from 'http';
-import { WebSocketService } from '../services/WebSocketService';
-import { logger } from '../utils/logger';
+import {Server} from 'http';
+import {WebSocketService} from '../services/WebSocketService';
+import {logger} from '../utils/logger';
 
 export function setupWebSocketServer(server: Server, wsService: WebSocketService) {
     const wss = new WebSocket.Server({ server });
@@ -25,6 +25,10 @@ export function setupWebSocketServer(server: Server, wsService: WebSocketService
                 return;
             } */
 
+            ws.send(JSON.stringify({
+                type: "announcement",
+                data: {content: ' 欢迎了解我们的产品！请选择下方按钮开始了解详情。'}
+            }))
             // 将 WebSocket 连接与用户 openId 关联
             wsService.addClient(openId, ws);
             logger.info('WebSocket 客户端已连接', { openId });

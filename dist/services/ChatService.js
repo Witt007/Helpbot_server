@@ -28,6 +28,7 @@ var wsMessageType;
     wsMessageType["new_topic"] = "new_topic";
     wsMessageType["error"] = "error";
     wsMessageType["suggestions"] = "suggestions";
+    wsMessageType["announcement"] = "announcement";
 })(wsMessageType || (wsMessageType = {}));
 class ChatService {
     constructor() {

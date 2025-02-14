@@ -34,6 +34,7 @@ function setupWebSocketServer(server, wsService) {
                   ws.close(1008, '认证失败');
                   return;
               } */
+            ws.send(JSON.stringify({ type: "announcement", data: { content: ' 欢迎了解我们的产品！请选择下方按钮开始了解详情。' } }));
             // 将 WebSocket 连接与用户 openId 关联
             wsService.addClient(openId, ws);
             logger_1.logger.info('WebSocket 客户端已连接', { openId });
