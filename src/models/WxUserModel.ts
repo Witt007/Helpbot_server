@@ -1,12 +1,12 @@
-import  db  from '../database/db';
-import { WxUser } from '../entities/WxUser';
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import db from '../database/db';
+import {WxUser} from '../entities/WxUser';
+import {ResultSetHeader, RowDataPacket} from 'mysql2';
 
 export class WxUserModel {
     async create(user: Omit<WxUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<WxUser> {
         const [result] = await db.query(
-            'INSERT INTO wx_users (open_id, avatar_url) VALUES (?, ?)',
-            [user.openId, user.avatarUrl]
+            'INSERT INTO wx_users (open_id, avatar_url, phone) VALUES (?, ?,?)',
+            [user.openId, user.avatarUrl, user.phone]
         ) as unknown as [ResultSetHeader, any];
         const created = await this.findByOpenId(user.openId);
         if (!created) throw new Error('Failed to create user');

@@ -39,9 +39,9 @@ const setupUserController = (app) => {
     // 创建用户
     app.post('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const { avatarUrl } = req.body;
+            const { avatarUrl, phone } = req.body;
             const openId = req.headers['x-wx-openid'];
-            const userId = yield WxUserService_1.WxUserService.getInstance().loginUser(openId, avatarUrl);
+            const userId = yield WxUserService_1.WxUserService.getInstance().loginUser(openId, avatarUrl, phone);
             res.status(201).json({ userId, message: 'User created successfully' });
         }
         catch (error) {
@@ -50,10 +50,10 @@ const setupUserController = (app) => {
         }
     }));
     // 获取用户
-    app.get('/users/:userId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    app.get('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const userId = req.params.userId;
-            const user = yield userService.getUserById(userId);
+            const openId = req.headers['x-wx-openid'];
+            const user = yield WxUserService_1.WxUserService.getInstance().findUserByOpenId(openId);
             if (user) {
                 res.json(user);
             }
@@ -67,7 +67,7 @@ const setupUserController = (app) => {
         }
     }));
     // 更新用户
-    app.put('/users/:userId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    app.put('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const userId = req.params.userId;
             const { username, email } = req.body;

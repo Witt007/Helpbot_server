@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS wx_users (
     session_key VARCHAR(100),
     nick_name VARCHAR(100),
     avatar_url TEXT,
-    last_login_time TIMESTAMP,
+    sex enum('0','1'),
+    phone varchar(20),
+    last_login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

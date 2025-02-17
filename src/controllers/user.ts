@@ -1,15 +1,15 @@
-import { Express, Request, Response, Router } from 'express';
+import {Express, Request, Response} from 'express';
 import {WxUserService} from '../services/WxUserService';
-import * as userService  from '../services/user';
+import * as userService from '../services/user';
 
 
 export const setupUserController = (app: Express) => {
     // 创建用户
     app.post('/users', async (req: Request, res: Response) => {
         try {
-            const { avatarUrl } = req.body;
+            const {avatarUrl, phone} = req.body;
             const openId = req.headers['x-wx-openid'] as string;
-            const userId = await WxUserService.getInstance().loginUser(openId,avatarUrl);
+            const userId = await WxUserService.getInstance().loginUser(openId, avatarUrl, phone);
             res.status(201).json({ userId, message: 'User created successfully' });
         } catch (error) {
             console.error('Error creating user:', error);
@@ -18,10 +18,10 @@ export const setupUserController = (app: Express) => {
     });
 
     // 获取用户
-    app.get('/users/:userId', async (req: Request, res: Response) => {
+    app.get('/users', async (req: Request, res: Response) => {
         try {
-            const userId = req.params.userId;
-            const user = await userService.getUserById(userId);
+            const openId = req.headers['x-wx-openid'] as string;
+            const user = await WxUserService.getInstance().findUserByOpenId(openId);
             if (user) {
                 res.json(user);
             } else {
@@ -34,7 +34,7 @@ export const setupUserController = (app: Express) => {
     });
 
     // 更新用户
-    app.put('/users/:userId', async (req: Request, res: Response) => {
+    app.put('/users', async (req: Request, res: Response) => {
         try {
             const userId = req.params.userId;
             const { username, email } = req.body;
