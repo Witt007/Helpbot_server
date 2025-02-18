@@ -2,7 +2,6 @@ import {Express, Request, Response} from 'express';
 import {WxUserService} from '../services/WxUserService';
 import * as userService from '../services/user';
 import axios from "axios";
-import {Agent} from "node:https";
 
 
 export const setupUserController = (app: Express) => {
@@ -45,8 +44,12 @@ export const setupUserController = (app: Express) => {
             if (code) {
                 if (code) {
                     try {
-                        const wxPhoneApiUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?code=${code}`; // Replace with the actual API URL.
-                        const response = await axios.get(wxPhoneApiUrl, {httpsAgent: new Agent({rejectUnauthorized: false})});
+                        const wxPhoneApiUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber`; // Replace with the actual API URL.
+                        const response = await axios.post(wxPhoneApiUrl, {code}, {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
                         console.log('getphonenum', response.data);
                         if (response.data.errmsg == 'ok') {
                             phonenumber = response.data.phone_info.phoneNumber || ''; // Update 'phoneNumber' based on API response structure.
