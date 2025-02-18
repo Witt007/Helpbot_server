@@ -39,6 +39,7 @@ exports.setupUserController = void 0;
 const WxUserService_1 = require("../services/WxUserService");
 const userService = __importStar(require("../services/user"));
 const axios_1 = __importDefault(require("axios"));
+const node_https_1 = require("node:https");
 const setupUserController = (app) => {
     // 创建用户
     app.post('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -81,7 +82,7 @@ const setupUserController = (app) => {
                 if (code) {
                     try {
                         const wxPhoneApiUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?code=${code}`; // Replace with the actual API URL.
-                        const response = yield axios_1.default.get(wxPhoneApiUrl);
+                        const response = yield axios_1.default.get(wxPhoneApiUrl, { httpsAgent: new node_https_1.Agent({ rejectUnauthorized: false }) });
                         console.log('getphonenum', response.data);
                         if (response.data.errmsg == 'ok') {
                             phonenumber = response.data.phone_info.phoneNumber || ''; // Update 'phoneNumber' based on API response structure.
