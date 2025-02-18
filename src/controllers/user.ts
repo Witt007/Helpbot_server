@@ -2,6 +2,7 @@ import {Express, Request, Response} from 'express';
 import {WxUserService} from '../services/WxUserService';
 import * as userService from '../services/user';
 import axios from "axios";
+import * as https from "node:https";
 
 
 export const setupUserController = (app: Express) => {
@@ -48,7 +49,8 @@ export const setupUserController = (app: Express) => {
                         const response = await axios.post(wxPhoneApiUrl, {code}, {
                             headers: {
                                 'Content-Type': 'application/json'
-                            }
+                            },
+                            httpsAgent: new https.Agent({rejectUnauthorized: false})
                         });
                         console.log('getphonenum', response.data);
                         if (response.data.errmsg == 'ok') {
