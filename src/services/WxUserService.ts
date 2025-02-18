@@ -5,17 +5,23 @@ export class WxUserService {
     private userModel = new WxUserModel();
 
     async loginUser(
-        openId: string, avatarUrl: string = '', phone: string): Promise<boolean> {
+        openId: string, avatarUrl: string = ''): Promise<boolean> {
         let user = await this.userModel.findByOpenId(openId);
         
         if (!user) {
             user = await this.userModel.create({
-                openId: openId, avatarUrl, phone
+                openId: openId, avatarUrl, phone: ''
             });
         } else {
            // await this.userModel.updateLastLogin(wxLoginData.openId);
         }
-        
+
+        return true;
+    }
+
+    async updateUserPhone(
+        openId: string, phone: string): Promise<boolean> {
+        const user = await this.userModel.updateUserPhone(openId, phone);
         return true;
     }
 

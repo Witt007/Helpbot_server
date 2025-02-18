@@ -27,4 +27,12 @@ export class WxUserModel {
             [openId]
         ) as unknown as [ResultSetHeader, any];
     }
+
+    async updateUserPhone(openId: string, phonenumber: string): Promise<ResultSetHeader> {
+        const [result] = await db.query(
+            'UPDATE wx_users SET phone = ? WHERE open_id = ?',
+            [phonenumber, openId]
+        ) as unknown as [ResultSetHeader, any];
+        return result
+    }
 } 

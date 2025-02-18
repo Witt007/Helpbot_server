@@ -1,15 +1,16 @@
 import {Express, Request, Response} from 'express';
 import {WxUserService} from '../services/WxUserService';
 import * as userService from '../services/user';
+import axios from "axios";
 
 
 export const setupUserController = (app: Express) => {
     // 创建用户
     app.post('/users', async (req: Request, res: Response) => {
         try {
-            const {avatarUrl, phone} = req.body;
+            const {avatarUrl} = req.body;
             const openId = req.headers['x-wx-openid'] as string;
-            const userId = await WxUserService.getInstance().loginUser(openId, avatarUrl, phone);
+            const userId = await WxUserService.getInstance().loginUser(openId, avatarUrl);
             res.status(201).json({ userId, message: 'User created successfully' });
         } catch (error) {
             console.error('Error creating user:', error);
@@ -36,10 +37,29 @@ export const setupUserController = (app: Express) => {
     // 更新用户
     app.put('/users', async (req: Request, res: Response) => {
         try {
-            const userId = req.params.userId;
-            const { username, email } = req.body;
-            await userService.updateUser(userId, username, email);
-            res.json({ message: 'User updated successfully' });
+            const openId = req.headers['x-wx-openid'] as string;
+            const {code} = req.body;
+            let phonenumber = '';
+            let success = false;
+            if (code) {
+                if (code) {
+                    try {
+                        const wxPhoneApiUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?code=${code}`; // Replace with the actual API URL.
+                        const response = await axios.get(wxPhoneApiUrl);
+                        console.log('getphonenum', response.data);
+                        if (response.data.errmsg == 'ok') {
+                            phonenumber = response.data.phone_info.phoneNumber || ''; // Update 'phoneNumber' based on API response structure.
+                            await WxUserService.getInstance().updateUserPhone(openId, phonenumber);
+                            success = true;
+                        }
+
+                    } catch (e) {
+                        console.log(e);
+                    }
+
+                }
+            }
+            res.json({success});
         } catch (error) {
             console.error('Error updating user:', error);
             res.status(500).json({ error: 'Failed to update user' });

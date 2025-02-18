@@ -35,5 +35,11 @@ class WxUserModel {
             const [result] = yield db_1.default.query('UPDATE wx_users SET last_login_time = CURRENT_TIMESTAMP WHERE open_id = ?', [openId]);
         });
     }
+    updateUserPhone(openId, phonenumber) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [result] = yield db_1.default.query('UPDATE wx_users SET phone = ? WHERE open_id = ?', [phonenumber, openId]);
+            return result;
+        });
+    }
 }
 exports.WxUserModel = WxUserModel;

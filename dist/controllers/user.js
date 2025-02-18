@@ -31,17 +31,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupUserController = void 0;
 const WxUserService_1 = require("../services/WxUserService");
 const userService = __importStar(require("../services/user"));
+const axios_1 = __importDefault(require("axios"));
 const setupUserController = (app) => {
     // 创建用户
     app.post('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const { avatarUrl, phone } = req.body;
+            const { avatarUrl } = req.body;
             const openId = req.headers['x-wx-openid'];
-            const userId = yield WxUserService_1.WxUserService.getInstance().loginUser(openId, avatarUrl, phone);
+            const userId = yield WxUserService_1.WxUserService.getInstance().loginUser(openId, avatarUrl);
             res.status(201).json({ userId, message: 'User created successfully' });
         }
         catch (error) {
@@ -69,10 +73,28 @@ const setupUserController = (app) => {
     // 更新用户
     app.put('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const userId = req.params.userId;
-            const { username, email } = req.body;
-            yield userService.updateUser(userId, username, email);
-            res.json({ message: 'User updated successfully' });
+            const openId = req.headers['x-wx-openid'];
+            const { code } = req.body;
+            let phonenumber = '';
+            let success = false;
+            if (code) {
+                if (code) {
+                    try {
+                        const wxPhoneApiUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?code=${code}`; // Replace with the actual API URL.
+                        const response = yield axios_1.default.get(wxPhoneApiUrl);
+                        console.log('getphonenum', response.data);
+                        if (response.data.errmsg == 'ok') {
+                            phonenumber = response.data.phone_info.phoneNumber || ''; // Update 'phoneNumber' based on API response structure.
+                            yield WxUserService_1.WxUserService.getInstance().updateUserPhone(openId, phonenumber);
+                            success = true;
+                        }
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
+                }
+            }
+            res.json({ success });
         }
         catch (error) {
             console.error('Error updating user:', error);
