@@ -35,6 +35,12 @@ class WxUserService {
             return true;
         });
     }
+    updateUserAvatar(openId, url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = yield this.userModel.updateUserAvatar(openId, url);
+            return true;
+        });
+    }
     findUserByOpenId(openId) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.userModel.findByOpenId(openId);

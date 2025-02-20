@@ -25,6 +25,12 @@ export class WxUserService {
         return true;
     }
 
+    async updateUserAvatar(
+        openId: string, url: string): Promise<boolean> {
+        const user = await this.userModel.updateUserAvatar(openId, url);
+        return true;
+    }
+
     async findUserByOpenId(openId: string): Promise<WxUser | null> {
         return await this.userModel.findByOpenId(openId);
     }

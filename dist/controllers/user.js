@@ -75,7 +75,7 @@ const setupUserController = (app) => {
     app.put('/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const openId = req.headers['x-wx-openid'];
-            const { code } = req.body;
+            const { code, url } = req.body;
             let phonenumber = '';
             let success = false;
             if (code) {
@@ -98,6 +98,15 @@ const setupUserController = (app) => {
                     catch (e) {
                         console.log(e);
                     }
+                }
+            }
+            else if (url) {
+                try {
+                    yield WxUserService_1.WxUserService.getInstance().updateUserAvatar(openId, url);
+                    success = true;
+                }
+                catch (e) {
+                    console.log(e);
                 }
             }
             res.json({ success });

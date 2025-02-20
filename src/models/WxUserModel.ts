@@ -35,4 +35,12 @@ export class WxUserModel {
         ) as unknown as [ResultSetHeader, any];
         return result
     }
+
+    async updateUserAvatar(openId: string, url: string): Promise<ResultSetHeader> {
+        const [result] = await db.query(
+            'UPDATE wx_users SET avatar_url = ? WHERE open_id = ?',
+            [url, openId]
+        ) as unknown as [ResultSetHeader, any];
+        return result
+    }
 } 

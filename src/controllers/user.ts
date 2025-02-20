@@ -39,7 +39,7 @@ export const setupUserController = (app: Express) => {
     app.put('/users', async (req: Request, res: Response) => {
         try {
             const openId = req.headers['x-wx-openid'] as string;
-            const {code} = req.body;
+            const {code, url} = req.body;
             let phonenumber = '';
             let success = false;
             if (code) {
@@ -63,6 +63,13 @@ export const setupUserController = (app: Express) => {
                         console.log(e);
                     }
 
+                }
+            } else if (url) {
+                try {
+                    await WxUserService.getInstance().updateUserAvatar(openId, url);
+                    success = true;
+                } catch (e) {
+                    console.log(e);
                 }
             }
             res.json({success});

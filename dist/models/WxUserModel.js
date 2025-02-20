@@ -41,5 +41,11 @@ class WxUserModel {
             return result;
         });
     }
+    updateUserAvatar(openId, url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [result] = yield db_1.default.query('UPDATE wx_users SET avatar_url = ? WHERE open_id = ?', [url, openId]);
+            return result;
+        });
+    }
 }
 exports.WxUserModel = WxUserModel;
